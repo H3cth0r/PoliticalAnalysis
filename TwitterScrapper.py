@@ -1,3 +1,6 @@
+from tweety import Twitter
+import pandas as pd
+
 class TwitterScraper:
   def __init__(self, username: str, password: str, target: str):
     self.target     = target
