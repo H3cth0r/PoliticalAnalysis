@@ -28,6 +28,22 @@ nltk.download('stopwords')
 =================================================================================
 =================================================================================
 """
+def remove_all_content(directory_path="./plots"):
+    # Check if the directory exists
+    if os.path.exists(directory_path):
+        # Iterate over all files and subdirectories in the directory
+        for item in os.listdir(directory_path):
+            item_path = os.path.join(directory_path, item)
+
+            # Remove files
+            if os.path.isfile(item_path):
+                os.remove(item_path)
+
+            # Recursively remove subdirectories
+            elif os.path.isdir(item_path):
+                remove_all_content(item_path)
+                os.rmdir(item_path)
+
 def authenticate(SERVICE_ACCOUNT_FILE, SCOPES):
     creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
     return creds
@@ -35,6 +51,10 @@ def authenticate(SERVICE_ACCOUNT_FILE, SCOPES):
 def upload_file(name_t, PARENT_FOLDER_ID_t, file_path, creds):
     # creds = authenticate()
     service = build("drive", "v3", credentials=creds)
+
+    current_datetime = datetime.now()
+    formatted_datetime = current_datetime.strftime("%Y_%m_%d_%H_%M_%S")
+    name_t = formatted_datetime + name_t 
 
     file_metadata = {
         "name": name_t,
@@ -47,6 +67,8 @@ def upload_file(name_t, PARENT_FOLDER_ID_t, file_path, creds):
         body=file_metadata,
         media_body=file_path
     ).execute()
+
+    return name_t
 def upload_all_images(directory_path, PARENT_FOLDER_ID, SERVICE_ACCOUNT_FILE, SCOPES):
     creds = authenticate(SERVICE_ACCOUNT_FILE, SCOPES)
     service = build("drive", "v3", credentials=creds)
@@ -59,8 +81,8 @@ def upload_all_images(directory_path, PARENT_FOLDER_ID, SERVICE_ACCOUNT_FILE, SC
             file_path = os.path.join(directory_path, file_name)
 
             # Call the upload_file function for each image file
-            upload_file(file_name, PARENT_FOLDER_ID, file_path, creds)
-            file_names.append(file_name)
+            new_name = upload_file(file_name, PARENT_FOLDER_ID, file_path, creds)
+            file_names.append(new_name)
     return file_names
 
 """

@@ -2,6 +2,7 @@ from tweety import Twitter
 import pandas as pd
 from credentials import username_t, password_t, headers, PARENT_FOLDER_ID
 # import seaborn as sns
+import os
 
 from flask import Flask, request, jsonify
 
@@ -14,6 +15,7 @@ from functionalities import (
         getInstagramBio,
         calculateScore,
         upload_all_images,
+        remove_all_content,
 )
 
 SCOPES = ["https://www.googleapis.com/auth/drive"]
@@ -22,6 +24,8 @@ SERVICE_ACCOUNT_FILE = "./service_account.json"
 
 app = Flask(__name__)
 sentiment_analyzer = SentimentAnalyzer()
+
+os.makedirs("./plots", exist_ok=True)
 
 
 @app.route("/")
@@ -62,8 +66,10 @@ def evaluateCompareCandidates(target_one, target_two):
             "plots_imgs" : plot_names,
             "plots_pie" : plots_vals + plots_bios
     }
-    print(return_dict)
+    remove_all_content("./plots")
     return jsonify(return_dict)
 
 if __name__ == "__main__":
-    app.run(debug =True)
+    # app.run(debug =True)
+    # CMD [ "python", "-m" , "flask", "run", "--host=0.0.0.0"]
+    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
