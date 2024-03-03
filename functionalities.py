@@ -51,6 +51,8 @@ def upload_all_images(directory_path, PARENT_FOLDER_ID, SERVICE_ACCOUNT_FILE, SC
     creds = authenticate(SERVICE_ACCOUNT_FILE, SCOPES)
     service = build("drive", "v3", credentials=creds)
 
+    file_names = []
+
     # Loop through all files in the specified directory
     for file_name in os.listdir(directory_path):
         if file_name.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".bmp")):
@@ -58,6 +60,8 @@ def upload_all_images(directory_path, PARENT_FOLDER_ID, SERVICE_ACCOUNT_FILE, SC
 
             # Call the upload_file function for each image file
             upload_file(file_name, PARENT_FOLDER_ID, file_path, creds)
+            file_names.append(file_name)
+    return file_names
 
 """
 =================================================================================
@@ -167,10 +171,17 @@ def plotPieComparison(target_one_vals, target_one, target_two_vals, target_two, 
     counter = 0
     fig, axs = plt.subplots(1, 2, figsize=(15, 5))
     img_counter = 0
+    pie_plots = []
     for i in range(len(target_one_vals)):
         values = [target_one_vals[i], target_two_vals[i]]
         axs[counter].pie(values, labels=labels, autopct="%1.1f%%", startangle=90)
         axs[counter].set_title(f'{numeric_user_info[i]}')
+        pie_plots.append({
+            "plot_name" : plot_name,
+            "title" : numeric_user_info[i],
+            "values" : [int(val) for val in values],
+            "labels" : labels
+        })
         if counter < 1: counter += 1
         else:
             plt.savefig(f'./plots/{target_one}_vs_{target_two}_pie_{img_counter}_{plot_name}.png')
@@ -178,6 +189,7 @@ def plotPieComparison(target_one_vals, target_one, target_two_vals, target_two, 
             counter = 0
             img_counter += 1
         # plt.show()
+    return pie_plots 
 
 """
 =======================================================================================
@@ -353,7 +365,7 @@ def calculateScore(json_data, target_t, df_target_one, df_target_two, df_target_
 
     not_negative_reputation = (df_target_one_mean[labels[0]] * score_percentage["not_negative_reputation"]) / df_target_two_mean[labels[0]]
     not_negative_reputation = score_percentage["not_negative_reputation"] if not_negative_reputation > score_percentage["not_negative_reputation"] else not_negative_reputation
-    not_negative_reputation = 0.1 - not_negative_reputation
+    # not_negative_reputation = score_percentage["not_negative_reputation"] - not_negative_reputation
 
     # Twitter comparison
     tweeter_followers_score = (target_one_bio[0] * score_percentage["tweeter_followers_score"])/target_two_bio[0]
@@ -381,5 +393,24 @@ def calculateScore(json_data, target_t, df_target_one, df_target_two, df_target_
     requiered_service_score = requiered_service_score * score_percentage["requiered_service_score"]
 
     score = current_charge_score + desired_charge_score + time_in_politics_score + positive_reputation + not_negative_reputation + tweeter_followers_score + instagram_followers_score + tweeter_retweets_score + tweeter_views_score + positivity_score + requiered_service_score
-    return score
+    calculated_scores = {
+            "final_score" : score,
+            "current_charge_score" : current_charge_score,
+            "desired_charge_score" : desired_charge_score,
+            "time_in_politics_score" : time_in_politics_score,
+            "positive_reputation" : positive_reputation,
+            "not_negative_reputation" : not_negative_reputation,
+            "tweeter_followers_score" : tweeter_followers_score,
+            "instagram_followers_score" : instagram_followers_score,
+            "tweeter_retweets_score" : tweeter_retweets_score,
+            "tweeter_views_score" : tweeter_views_score,
+            "positivity_score" : positivity_score,
+            "requiered_service_score" : requiered_service_score
+    }
+    result_scores = {
+            "calculated_scores" : calculated_scores,
+            "ponderation_scores" :  score_percentage,
+    }
+
+    return result_scores
 
