@@ -3,6 +3,8 @@ credentials.py
 plots/*
 corpus_save/*
 envpolitical/*
+TOKEN.txt
+service_account.json
 
 *.bundle.*
 lib/

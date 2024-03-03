@@ -6,6 +6,11 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
+from datetime import datetime, timedelta
+import requests
+
+from googleapiclient.discovery import build
+from google.oauth2 import service_account
 
 import os
 from wordcloud import WordCloud
@@ -17,6 +22,56 @@ from nltk.corpus import stopwords
 nltk.download('punkt')
 nltk.download('stopwords')
 
+"""
+=================================================================================
+=================================================================================
+=================================================================================
+=================================================================================
+"""
+def authenticate(SERVICE_ACCOUNT_FILE, SCOPES):
+    creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+    return creds
+
+def upload_file(name_t, PARENT_FOLDER_ID_t, file_path, creds):
+    # creds = authenticate()
+    service = build("drive", "v3", credentials=creds)
+
+    file_metadata = {
+        "name": name_t,
+        "parents": [PARENT_FOLDER_ID_t],
+    }
+
+    # media = MediaFileUpload(file_path, resumable=True)
+
+    file = service.files().create(
+        body=file_metadata,
+        media_body=file_path
+    ).execute()
+def upload_all_images(directory_path, PARENT_FOLDER_ID, SERVICE_ACCOUNT_FILE, SCOPES):
+    creds = authenticate(SERVICE_ACCOUNT_FILE, SCOPES)
+    service = build("drive", "v3", credentials=creds)
+
+    # Loop through all files in the specified directory
+    for file_name in os.listdir(directory_path):
+        if file_name.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".bmp")):
+            file_path = os.path.join(directory_path, file_name)
+
+            # Call the upload_file function for each image file
+            upload_file(file_name, PARENT_FOLDER_ID, file_path, creds)
+
+"""
+=================================================================================
+=================================================================================
+=================================================================================
+=================================================================================
+"""
+def order_probabilities(output):
+    labels = ["NEG", "NEU", "POS"]
+    ordered_probas = []
+    for label in labels:
+      ordered_probas.append(output.probas[label])
+    return ordered_probas
+
 class SentimentAnalyzer:
   def __init__(self):
     self.analyser = create_analyzer(task="sentiment", lang="es")
@@ -24,9 +79,8 @@ class SentimentAnalyzer:
   def applyAnalysis(self, text_t): return self.analyser.predict(text_t)
   def applyPipeline(self, text_t):
     text_t = str(text_t)
-    result = self.analyser.predict(self.applyPreprocess(text_t))
-    #return tuple(self.analyser.predict(preprocess_tweet(text_t)).probas.values()) # NEG, NEU, POS
-    return tuple(result.probas.values())
+    result = tuple(order_probabilities(self.analyser.predict(self.applyPreprocess(text_t))))
+    return result
 """
 =======================================================================================
 =======================================================================================
@@ -104,7 +158,8 @@ def plotSentimentAnalysisCompare(df_target_one, target_one, df_target_two, targe
     # plt.show()
     plt.savefig(f'./plots/{target_one}_vs_{target_two}_sentiments.png')
 
-def plotPieComparison(target_one_vals, target_one, target_two_vals, target_two):
+# def upload_file(name_t, creds_t, PARENT_FOLDER_ID_t, file_path):
+def plotPieComparison(target_one_vals, target_one, target_two_vals, target_two, plot_name="bio"):
     numeric_user_info = ["author.followers_count", "author.normal_followers_count", "author.friends_count", "author.favourites_count", "author.statuses_count", "author.media_count", "author.listed_count"]
     numeric_cols_per_tweet = ["views", "retweet_counts", "quote_counts", "bookmark_count", "reply_counts", "likes"]
 
@@ -118,7 +173,7 @@ def plotPieComparison(target_one_vals, target_one, target_two_vals, target_two):
         axs[counter].set_title(f'{numeric_user_info[i]}')
         if counter < 1: counter += 1
         else:
-            plt.savefig(f'./plots/{target_one}_vs_{target_two}_pie_{img_counter}.png')
+            plt.savefig(f'./plots/{target_one}_vs_{target_two}_pie_{img_counter}_{plot_name}.png')
             fig, axs = plt.subplots(1, 2, figsize=(15, 5))
             counter = 0
             img_counter += 1
@@ -193,3 +248,138 @@ def analyzeCandidateCorpus(df_target, target_t):
     words_from_dataframe = ' '.join(df.values.flatten().astype(str))
     oc_cloud= WordCloud(background_color='white', max_words=300, max_font_size=40,random_state=1).generate(words_from_dataframe)
     oc_cloud.to_file(f'./plots/{target_t}_wordcloud.png')
+
+
+def getInstagramBio(target_t, headers_t):
+    """
+    https://www.instagram.com/api/v1/users/web_profile_info/?username=claudia_shein
+    """
+    path = f"https://www.instagram.com/api/v1/users/web_profile_info/?username={target_t}"
+
+    response = requests.get(path, headers=headers_t)
+    if response.status_code == 200:
+        bio = {
+                "followers" : response.json()["data"]["user"]["edge_followed_by"]["count"],
+                "following" : response.json()["data"]["user"]["edge_follow"]["count"],
+                }
+        return bio
+    else:return {"followers": 0, "following": 0} 
+    
+
+
+def calculate_viability_score(budget, num_services, time_before_election):
+    service_price = 10000
+    optimal_days_before_election = 365
+    required_budget = num_services * service_price * 0.3
+    viability_score = (budget * service_price * num_services) / ((time_before_election + optimal_days_before_election) * required_budget)
+    return min(1, max(0, viability_score))  # Ensure the score is between 0 and 1
+def days_until_date(date_str):
+    try:
+        # Parse the input date string
+        date_object = datetime.strptime(date_str, "%d/%m/%Y")
+
+        # Get the current date
+        current_date = datetime.now()
+
+        # Calculate the difference in days
+        days_until = (date_object - current_date).days
+
+        return max(0, days_until)  # Ensure a non-negative result
+    except ValueError:
+        print("Invalid date format. Please use DD/MM/YYYY.")
+        return None
+def calculateScore(json_data, target_t, df_target_one, df_target_two, df_target_one_mean, df_target_two_mean, target_one_bio, target_two_bio, target_one_vals, target_two_vals, tone_i_bio, ttwo_i_bio):
+    """
+    Political Experience 20%
+    - Actual  charge 5%
+    - Time in politics 10%
+    - Desired charge 5%
+
+    Online Reputation 20%
+    - Sentiment Analysis tweets(people) positive 10%
+    - Sentiment Analysis tweets(people) negative 10%
+    
+    Social Network analysis 25%
+    - number of followers 10%
+        - Twitter
+        - Instagram
+    - interaction 10%
+        - Retweets
+        - Views
+    - Sentiment analysis (candidate tweets) 5%
+    
+    Requiered Service 20%
+    - Budged 10%
+    - Number of services required by candidate 10%
+    - time before election 15%
+
+    """
+
+    # percentage
+    score_percentage = {
+            "current_charge" : 0.05,
+            "desired_charge" : 0.05,
+            "time_in_politics" : 0.1,
+            "positive_reputation" : 0.1,
+            "not_negative_reputation" : 0.1,
+            "tweeter_followers_score" : 0.1,
+            "instagram_followers_score" : 0.1,
+            "retweets_score" : 0.1,
+            "views_score" : 0.1,
+            "positivity_score" : 0.1,
+            "requiered_service_score" : 0.1,
+    }
+
+    # current Charge 5%
+    political_charges = ["Presidente Municipal", "Magistrado", 
+                         "Regidor", "Alcalde", "Gobernador", 
+                         "Ministro", "Diputado", "Senador", 
+                         "Secretario de Estado", 
+                         "Presidente de la República"]
+    percentage_lambda = lambda charge: (political_charges.index(charge) + 1) * score_percentage["current_charge"] / len(political_charges)
+    current_charge_score = 0 if json_data["current_political_charge"] not in political_charges else percentage_lambda(json_data["current_political_charge"])
+
+    # Desired charge
+    desired_charge_score = 0 if json_data["desired_political_charge"] not in political_charges else score_percentage["desired_charge"] - percentage_lambda(json_data["desired_political_charge"])
+
+    # Time in politics
+    calculate_percentage = lambda value: min(value, 9) * score_percentage["time_in_politics"] / 9 if value < 10 else score_percentage["time_in_politics"]
+    time_in_politics_score = calculate_percentage(json_data["time_in_politics"])
+
+    # Online reputation
+    labels = ["NEG", "NEU", "POS"]
+    positive_reputation = (df_target_one_mean[labels[-1]] * score_percentage["positive_reputation"]) / df_target_two_mean[labels[-1]]
+    positive_reputation = score_percentage["positive_reputation"] if positive_reputation > score_percentage["positive_reputation"] else positive_reputation
+
+    not_negative_reputation = (df_target_one_mean[labels[0]] * score_percentage["not_negative_reputation"]) / df_target_two_mean[labels[0]]
+    not_negative_reputation = score_percentage["not_negative_reputation"] if not_negative_reputation > score_percentage["not_negative_reputation"] else not_negative_reputation
+    not_negative_reputation = 0.1 - not_negative_reputation
+
+    # Twitter comparison
+    tweeter_followers_score = (target_one_bio[0] * score_percentage["tweeter_followers_score"])/target_two_bio[0]
+    tweeter_followers_score = score_percentage["tweeter_followers_score"] if tweeter_followers_score > score_percentage["tweeter_followers_score"] else tweeter_followers_score 
+
+    # Instagram comparison
+    instagram_followers_score = (tone_i_bio["followers"] * score_percentage["instagram_followers_score"]) / ttwo_i_bio["followers"]
+    instagram_followers_score = score_percentage["instagram_followers_score"] if instagram_followers_score > score_percentage["instagram_followers_score"] else instagram_followers_score
+    
+    # Retweets
+    tweeter_retweets_score = (target_one_vals[1] * score_percentage["retweets_score"]) / target_two_vals[1]
+    tweeter_retweets_score = score_percentage["retweets_score"] if tweeter_retweets_score > score_percentage["retweets_score"] else tweeter_retweets_score
+
+    # Views
+    tweeter_views_score = (target_one_vals[0] * score_percentage["views_score"]) / target_two_vals[1]
+    tweeter_views_score = score_percentage["views_score"] if tweeter_views_score > score_percentage["views_score"] else tweeter_views_score
+
+    # Sentiment Analysis positivity candidate
+    positivity_score = df_target_one[df_target_one["author.username"] == target_t]["POS"].mean()
+    positivity_score = (positivity_score * score_percentage["positivity_score"])
+    positivity_score = score_percentage["positivity_score"] if positivity_score > score_percentage["positivity_score"] else positivity_score 
+
+    # Required Service
+    requiered_service_score = calculate_viability_score(json_data["budget"], len(json_data["services"]), days_until_date(json_data["end_date"]))
+    requiered_service_score = requiered_service_score * score_percentage["requiered_service_score"]
+
+    score = current_charge_score + desired_charge_score + time_in_politics_score + positive_reputation + not_negative_reputation + tweeter_followers_score + instagram_followers_score + tweeter_retweets_score + tweeter_views_score + positivity_score + requiered_service_score
+    return score
+
