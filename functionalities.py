@@ -85,6 +85,48 @@ def upload_all_images(directory_path, PARENT_FOLDER_ID, SERVICE_ACCOUNT_FILE, SC
             file_names.append(new_name)
     return file_names
 
+def saveDataOnSpreadSheet(SPREADSHEET_ID, SERVICE_ACCOUNT_FILE, SCOPES):
+    creds = authenticate(SERVICE_ACCOUNT_FILE, SCOPES)
+    service = build("sheets", "v4", credentials=creds)
+    sheet = service.spreadsheets()
+    values = [["Prueba!", "another"]]
+    result = sheet.values().append(spreadsheetId=SPREADSHEET_ID,
+                                   range="plots!A1",
+                                   valueInputOption = "USER_ENTERED",
+                                   body={"values":values}
+    ).execute()
+    return f"{result.get('updates').get('updatedCells')}"
+
+def upload_plots_reference(email_t, images_t, SPREADSHEET_ID, SERVICE_ACCOUNT_FILE, SCOPES):
+    creds = authenticate(SERVICE_ACCOUNT_FILE, SCOPES)
+    service = build("sheets", "v4", credentials=creds)
+    sheet = service.spreadsheets()
+    for image in images_t:
+        values = [["PlotsImages/"+image, email_t]]
+        result = sheet.values().append(spreadsheetId=SPREADSHEET_ID,
+                                       range="plots!A1",
+                                       valueInputOption = "USER_ENTERED",
+                                       body={"values":values}
+        ).execute()
+    return "done"
+def upload_scores(email_t, scores_t, SPREADSHEET_ID, SERVICE_ACCOUNT_FILE, SCOPES):
+    creds = authenticate(SERVICE_ACCOUNT_FILE, SCOPES)
+    service = build("sheets", "v4", credentials=creds)
+    sheet = service.spreadsheets()
+    scores_t = scores_t["calculated_scores"]
+    keys_scores = scores_t.keys()
+    values_keys = []
+    for key_score in keys_scores:
+        values_keys.append(scores_t[key_score])
+    values = [values_keys]
+    result = sheet.values().append(spreadsheetId=SPREADSHEET_ID,
+                                   range="scores!A1",
+                                   valueInputOption = "USER_ENTERED",
+                                   body={"values":values}
+    ).execute()
+    return "done"
+
+     
 """
 =================================================================================
 =================================================================================

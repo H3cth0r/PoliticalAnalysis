@@ -1,6 +1,6 @@
 from tweety import Twitter
 import pandas as pd
-from credentials import username_t, password_t, headers, PARENT_FOLDER_ID
+from credentials import username_t, password_t, headers, PARENT_FOLDER_ID, SPREAD_SHEET_ID
 # import seaborn as sns
 import os
 
@@ -16,6 +16,9 @@ from functionalities import (
         calculateScore,
         upload_all_images,
         remove_all_content,
+        saveDataOnSpreadSheet,
+        upload_plots_reference,
+        upload_scores,
 )
 
 SCOPES = ["https://www.googleapis.com/auth/drive"]
@@ -32,9 +35,10 @@ os.makedirs("./plots", exist_ok=True)
 def mainEntry():
     return "Howdy Y'all"
 
-@app.route("/evaluate/candidate/<target>")
-def evaluateCandidateTwitter(target):
-    return "Hi!"
+@app.route("/test", methods=["POST"])
+def evaluateCandidateTwitter():
+    saveDataOnSpreadSheet(SPREAD_SHEET_ID, SERVICE_ACCOUNT_FILE, SCOPES)
+    return "done"
 
 @app.route("/evaluate/compare/<target_one>/<target_two>", methods=["POST"])
 def evaluateCompareCandidates(target_one, target_two):
@@ -61,6 +65,8 @@ def evaluateCompareCandidates(target_one, target_two):
 
     plot_names = upload_all_images("./plots", PARENT_FOLDER_ID, SERVICE_ACCOUNT_FILE, SCOPES)
 
+    upload_plots_reference(json_data["email"], plot_names, SPREAD_SHEET_ID, SERVICE_ACCOUNT_FILE, SCOPES)
+    upload_scores(json_data["email"], result_score, SPREAD_SHEET_ID, SERVICE_ACCOUNT_FILE, SCOPES)
     return_dict = {
             "score" : result_score,
             "plots_imgs" : plot_names,
