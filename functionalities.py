@@ -162,7 +162,7 @@ class SentimentAnalyzer:
 =======================================================================================
 """
 def scatter_plot_with_title(data_frame, x_column, y_column, title):
-    plt.figure(figsize=(10, 6))  # Adjust the figure size as needed
+    plt.figure(figsize=(10, 10))  # Adjust the figure size as needed
     plt.scatter(data_frame[x_column], data_frame[y_column])
     plt.title(title)
     plt.xlabel(x_column)
@@ -239,7 +239,7 @@ def plotPieComparison(target_one_vals, target_one, target_two_vals, target_two, 
 
     labels = [target_one, target_two]
     counter = 0
-    fig, axs = plt.subplots(1, 2, figsize=(15, 5))
+    fig, axs = plt.subplots(1, 2, figsize=(15, 12))
     img_counter = 0
     pie_plots = []
     for i in range(len(target_one_vals)):
@@ -255,7 +255,7 @@ def plotPieComparison(target_one_vals, target_one, target_two_vals, target_two, 
         if counter < 1: counter += 1
         else:
             plt.savefig(f'./plots/{target_one}_vs_{target_two}_pie_{img_counter}_{plot_name}.png')
-            fig, axs = plt.subplots(1, 2, figsize=(15, 5))
+            fig, axs = plt.subplots(1, 2, figsize=(15, 12))
             counter = 0
             img_counter += 1
         # plt.show()
