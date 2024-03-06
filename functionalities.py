@@ -115,9 +115,15 @@ def upload_scores(email_t, scores_t, SPREADSHEET_ID, SERVICE_ACCOUNT_FILE, SCOPE
     sheet = service.spreadsheets()
     scores_t = scores_t["calculated_scores"]
     keys_scores = scores_t.keys()
+    keys_calculated_scores ["final_score", "current_charge_score" , "desired_charge_score" ,
+            "time_in_politics_score" , "positive_reputation" , "not_negative_reputation" ,
+            "tweeter_followers_score" , "instagram_followers_score" , "tweeter_retweets_score" ,
+            "tweeter_views_score" , "positivity_score" , "requiered_service_score" 
+    ]
     values_keys = []
-    for key_score in keys_scores:
+    for key_score in keys_calculated_scores:
         values_keys.append(scores_t[key_score])
+    values_keys.append(email_t)
     values = [values_keys]
     result = sheet.values().append(spreadsheetId=SPREADSHEET_ID,
                                    range="scores!A1",
@@ -264,7 +270,10 @@ def plotPieComparison(target_one_vals, target_one, target_two_vals, target_two, 
 
 def analyzeCandidateTwitter(username_t, password_t, target_t, target_sa, topics=[]):
     target_twitter_scraper = TwitterScraper(username_t, password_t, target_t)
-    target_twitter_scraper.downloadTargetTweets()
+    try:
+        target_twitter_scraper.downloadTargetTweets()
+    except:
+        print("No data user")
 
     for topic in topics: target_twitter_scraper.downloadTopicTweets(topic, pages=2)
 
@@ -334,10 +343,15 @@ def getInstagramBio(target_t, headers_t):
 
     response = requests.get(path, headers=headers_t)
     if response.status_code == 200:
-        bio = {
-                "followers" : response.json()["data"]["user"]["edge_followed_by"]["count"],
-                "following" : response.json()["data"]["user"]["edge_follow"]["count"],
-                }
+        bio = {"followers": 0, "following": 0} 
+        try:
+            bio = {
+                    "followers" : response.json()["data"]["user"]["edge_followed_by"]["count"],
+                    "following" : response.json()["data"]["user"]["edge_follow"]["count"],
+                    }
+        except:
+            bio = {"followers": 0, "following": 0} 
+            print("Instagram error")
         return bio
     else:return {"followers": 0, "following": 0} 
     
@@ -411,7 +425,7 @@ def calculateScore(json_data, target_t, df_target_one, df_target_two, df_target_
                          "Regidor", "Alcalde", "Gobernador", 
                          "Ministro", "Diputado", "Senador", 
                          "Secretario de Estado", 
-                         "Presidente de la República"]
+                         "Presidente"]
     percentage_lambda = lambda charge: (political_charges.index(charge) + 1) * score_percentage["current_charge"] / len(political_charges)
     current_charge_score = 0 if json_data["current_political_charge"] not in political_charges else percentage_lambda(json_data["current_political_charge"])
 
