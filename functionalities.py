@@ -115,7 +115,7 @@ def upload_scores(email_t, scores_t, SPREADSHEET_ID, SERVICE_ACCOUNT_FILE, SCOPE
     sheet = service.spreadsheets()
     scores_t = scores_t["calculated_scores"]
     keys_scores = scores_t.keys()
-    keys_calculated_scores ["final_score", "current_charge_score" , "desired_charge_score" ,
+    keys_calculated_scores = ["final_score", "current_charge_score" , "desired_charge_score" ,
             "time_in_politics_score" , "positive_reputation" , "not_negative_reputation" ,
             "tweeter_followers_score" , "instagram_followers_score" , "tweeter_retweets_score" ,
             "tweeter_views_score" , "positivity_score" , "requiered_service_score" 
@@ -275,7 +275,7 @@ def analyzeCandidateTwitter(username_t, password_t, target_t, target_sa, topics=
     except:
         print("No data user")
 
-    for topic in topics: target_twitter_scraper.downloadTopicTweets(topic, pages=2)
+    for topic in topics: target_twitter_scraper.downloadTopicTweets(topic, pages=1)
 
     numeric_user_info = ["author.followers_count", "author.normal_followers_count", "author.friends_count", "author.favourites_count", "author.statuses_count", "author.media_count", "author.listed_count"]
     numeric_cols_per_tweet = ["views", "retweet_counts", "quote_counts", "bookmark_count", "reply_counts", "likes"]
