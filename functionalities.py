@@ -446,12 +446,23 @@ def calculateScore(json_data, target_t, df_target_one, df_target_two, df_target_
     # not_negative_reputation = score_percentage["not_negative_reputation"] - not_negative_reputation
 
     # Twitter comparison
+    """
+    score = 0.1
+    xochitl = 13 followers
+    sheinbaum = 12 followers
+
+    xochitl = 13 followers
+    sheinbaum = 15 followers
+
+    xochitl = 0.1
+    sheinbaum = ?
+    """
     tweeter_followers_score = (target_one_bio[0] * score_percentage["tweeter_followers_score"])/target_two_bio[0]
     tweeter_followers_score = score_percentage["tweeter_followers_score"] if tweeter_followers_score > score_percentage["tweeter_followers_score"] else tweeter_followers_score 
 
     # Instagram comparison
-    instagram_followers_score = (tone_i_bio["followers"] * score_percentage["instagram_followers_score"]) / ttwo_i_bio["followers"]
-    instagram_followers_score = score_percentage["instagram_followers_score"] if instagram_followers_score > score_percentage["instagram_followers_score"] else instagram_followers_score
+    # instagram_followers_score = (tone_i_bio["followers"] * score_percentage["instagram_followers_score"]) / ttwo_i_bio["followers"]
+    # instagram_followers_score = score_percentage["instagram_followers_score"] if instagram_followers_score > score_percentage["instagram_followers_score"] else instagram_followers_score
     
     # Retweets
     tweeter_retweets_score = (target_one_vals[1] * score_percentage["retweets_score"]) / target_two_vals[1]
@@ -470,7 +481,8 @@ def calculateScore(json_data, target_t, df_target_one, df_target_two, df_target_
     requiered_service_score = calculate_viability_score(json_data["budget"], len(json_data["services"]), days_until_date(json_data["end_date"]))
     requiered_service_score = requiered_service_score * score_percentage["requiered_service_score"]
 
-    score = current_charge_score + desired_charge_score + time_in_politics_score + positive_reputation + not_negative_reputation + tweeter_followers_score + instagram_followers_score + tweeter_retweets_score + tweeter_views_score + positivity_score + requiered_service_score
+    # score = current_charge_score + desired_charge_score + time_in_politics_score + positive_reputation + not_negative_reputation + tweeter_followers_score + instagram_followers_score + tweeter_retweets_score + tweeter_views_score + positivity_score + requiered_service_score
+    score = current_charge_score + desired_charge_score + time_in_politics_score + positive_reputation + not_negative_reputation + tweeter_followers_score + tweeter_retweets_score + tweeter_views_score + positivity_score + requiered_service_score
     calculated_scores = {
             "final_score" : score,
             "current_charge_score" : current_charge_score,
@@ -479,7 +491,7 @@ def calculateScore(json_data, target_t, df_target_one, df_target_two, df_target_
             "positive_reputation" : positive_reputation,
             "not_negative_reputation" : not_negative_reputation,
             "tweeter_followers_score" : tweeter_followers_score,
-            "instagram_followers_score" : instagram_followers_score,
+            # "instagram_followers_score" : instagram_followers_score,
             "tweeter_retweets_score" : tweeter_retweets_score,
             "tweeter_views_score" : tweeter_views_score,
             "positivity_score" : positivity_score,
