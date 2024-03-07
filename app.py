@@ -58,10 +58,11 @@ def evaluateCompareCandidates(target_one, target_two):
 
     analyzeCandidateCorpus(df_targe_one, target_one)
 
-    target_one_instagram_bio = getInstagramBio(json_data["target_one_instagram"], headers) 
-    target_two_instagram_bio = getInstagramBio(json_data["target_two_instagram"], headers) 
+    # target_one_instagram_bio = getInstagramBio(json_data["target_one_instagram"], headers) 
+    # target_two_instagram_bio = getInstagramBio(json_data["target_two_instagram"], headers) 
 
-    result_score = calculateScore(json_data, target_one, df_targe_one, df_targe_two, df_target_one_mean, df_target_two_mean, target_one_bio, target_two_bio, target_one_vals, target_two_vals, target_one_instagram_bio, target_two_instagram_bio)
+    # result_score = calculateScore(json_data, target_one, df_targe_one, df_targe_two, df_target_one_mean, df_target_two_mean, target_one_bio, target_two_bio, target_one_vals, target_two_vals, target_one_instagram_bio, target_two_instagram_bio)
+    result_score = calculateScore(json_data, target_one, df_targe_one, df_targe_two, df_target_one_mean, df_target_two_mean, target_one_bio, target_two_bio, target_one_vals, target_two_vals)
 
     plot_names = upload_all_images("./plots", PARENT_FOLDER_ID, SERVICE_ACCOUNT_FILE, SCOPES)
 

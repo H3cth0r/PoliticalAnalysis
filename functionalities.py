@@ -378,7 +378,7 @@ def days_until_date(date_str):
     except ValueError:
         print("Invalid date format. Please use DD/MM/YYYY.")
         return None
-def calculateScore(json_data, target_t, df_target_one, df_target_two, df_target_one_mean, df_target_two_mean, target_one_bio, target_two_bio, target_one_vals, target_two_vals, tone_i_bio, ttwo_i_bio):
+def calculateScore(json_data, target_t, df_target_one, df_target_two, df_target_one_mean, df_target_two_mean, target_one_bio, target_two_bio, target_one_vals, target_two_vals):
     """
     Political Experience 20%
     - Actual  charge 5%
