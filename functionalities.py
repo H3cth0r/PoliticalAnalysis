@@ -117,7 +117,7 @@ def upload_scores(email_t, scores_t, SPREADSHEET_ID, SERVICE_ACCOUNT_FILE, SCOPE
     keys_scores = scores_t.keys()
     keys_calculated_scores = ["final_score", "current_charge_score" , "desired_charge_score" ,
             "time_in_politics_score" , "positive_reputation" , "not_negative_reputation" ,
-            "tweeter_followers_score" , "instagram_followers_score" , "tweeter_retweets_score" ,
+            "tweeter_followers_score" , "political_party_score" , "tweeter_retweets_score" ,
             "tweeter_views_score" , "positivity_score" , "requiered_service_score" 
     ]
     values_keys = []
@@ -413,11 +413,11 @@ def calculateScore(json_data, target_t, df_target_one, df_target_two, df_target_
             "positive_reputation" : 0.1,
             "not_negative_reputation" : 0.1,
             "tweeter_followers_score" : 0.1,
-            "instagram_followers_score" : 0.1,
             "retweets_score" : 0.1,
             "views_score" : 0.1,
             "positivity_score" : 0.1,
             "requiered_service_score" : 0.1,
+            "political_party_score" : 0.1,
     }
 
     # current Charge 5%
@@ -446,24 +446,9 @@ def calculateScore(json_data, target_t, df_target_one, df_target_two, df_target_
     # not_negative_reputation = score_percentage["not_negative_reputation"] - not_negative_reputation
 
     # Twitter comparison
-    """
-    score = 0.1
-    xochitl = 13 followers
-    sheinbaum = 12 followers
-
-    xochitl = 13 followers
-    sheinbaum = 15 followers
-
-    xochitl = 0.1
-    sheinbaum = ?
-    """
     tweeter_followers_score = (target_one_bio[0] * score_percentage["tweeter_followers_score"])/target_two_bio[0]
     tweeter_followers_score = score_percentage["tweeter_followers_score"] if tweeter_followers_score > score_percentage["tweeter_followers_score"] else tweeter_followers_score 
 
-    # Instagram comparison
-    # instagram_followers_score = (tone_i_bio["followers"] * score_percentage["instagram_followers_score"]) / ttwo_i_bio["followers"]
-    # instagram_followers_score = score_percentage["instagram_followers_score"] if instagram_followers_score > score_percentage["instagram_followers_score"] else instagram_followers_score
-    
     # Retweets
     tweeter_retweets_score = (target_one_vals[1] * score_percentage["retweets_score"]) / target_two_vals[1]
     tweeter_retweets_score = score_percentage["retweets_score"] if tweeter_retweets_score > score_percentage["retweets_score"] else tweeter_retweets_score
@@ -481,8 +466,21 @@ def calculateScore(json_data, target_t, df_target_one, df_target_two, df_target_
     requiered_service_score = calculate_viability_score(json_data["budget"], len(json_data["services"]), days_until_date(json_data["end_date"]))
     requiered_service_score = requiered_service_score * score_percentage["requiered_service_score"]
 
+    # political party
+    political_parties = {
+            "Partido Acción Nacional" : 0.01,
+            "Morena" : 0.01,
+            "Movimiento Ciudadano" : 0.01,
+            "Partido Revolucional Institucional" : 0.01,
+            "Partido de la Revolución Democrática" : 0.01,
+            "Partido Verde Ecologista" : 0.01,
+            "Partido  del Trabajo" : 0.01,
+            "Otro":0.01,
+    }
+    political_party_score = political_parties[json_data["political_party"]]
+
     # score = current_charge_score + desired_charge_score + time_in_politics_score + positive_reputation + not_negative_reputation + tweeter_followers_score + instagram_followers_score + tweeter_retweets_score + tweeter_views_score + positivity_score + requiered_service_score
-    score = current_charge_score + desired_charge_score + time_in_politics_score + positive_reputation + not_negative_reputation + tweeter_followers_score + tweeter_retweets_score + tweeter_views_score + positivity_score + requiered_service_score
+    score = current_charge_score + desired_charge_score + political_party_score + time_in_politics_score + positive_reputation + not_negative_reputation + tweeter_followers_score + tweeter_retweets_score + tweeter_views_score + positivity_score + requiered_service_score
     calculated_scores = {
             "final_score" : score,
             "current_charge_score" : current_charge_score,
@@ -491,11 +489,95 @@ def calculateScore(json_data, target_t, df_target_one, df_target_two, df_target_
             "positive_reputation" : positive_reputation,
             "not_negative_reputation" : not_negative_reputation,
             "tweeter_followers_score" : tweeter_followers_score,
-            # "instagram_followers_score" : instagram_followers_score,
             "tweeter_retweets_score" : tweeter_retweets_score,
             "tweeter_views_score" : tweeter_views_score,
             "positivity_score" : positivity_score,
-            "requiered_service_score" : requiered_service_score
+            "requiered_service_score" : requiered_service_score,
+            "political_party_score" : political_party_score
+    }
+    result_scores = {
+            "calculated_scores" : calculated_scores,
+            "ponderation_scores" :  score_percentage,
+    }
+
+    return result_scores
+
+def calculateScoreNoTwitter(json_data):
+    # percentage
+    score_percentage = {
+            "current_charge" : 0.15,
+            "desired_charge" : 0.15,
+            "time_in_politics" : 0.2,
+            "positive_reputation" : 0,
+            "not_negative_reputation" : 0,
+            "tweeter_followers_score" : 0,
+            "retweets_score" : 0,
+            "views_score" : 0,
+            "positivity_score" : 0,
+            "requiered_service_score" : 0.2,
+            "political_party_score" : 0.2,
+    }
+
+    # current Charge 5%
+    political_charges = ["Presidente Municipal", "Magistrado", 
+                         "Regidor", "Alcalde", "Gobernador", 
+                         "Ministro", "Diputado", "Senador", 
+                         "Secretario de Estado", 
+                         "Presidente"]
+    percentage_lambda = lambda charge: (political_charges.index(charge) + 1) * score_percentage["current_charge"] / len(political_charges)
+    current_charge_score = 0 if json_data["current_political_charge"] not in political_charges else percentage_lambda(json_data["current_political_charge"])
+
+    # Desired charge
+    desired_charge_score = 0 if json_data["desired_political_charge"] not in political_charges else score_percentage["desired_charge"] - percentage_lambda(json_data["desired_political_charge"])
+
+    # Time in politics
+    calculate_percentage = lambda value: min(value, 9) * score_percentage["time_in_politics"] / 9 if value < 10 else score_percentage["time_in_politics"]
+    time_in_politics_score = calculate_percentage(json_data["time_in_politics"])
+
+    # Online reputation
+    positive_reputation = score_percentage["positive_reputation"]
+    not_negative_reputation = score_percentage["not_negative_reputation"]
+    # Twitter comparison
+    tweeter_followers_score = score_percentage["tweeter_followers_score"]
+    # Retweets
+    tweeter_retweets_score = score_percentage["retweets_score"]
+    # Views
+    tweeter_views_score = score_percentage["views_score"]
+    # Sentiment Analysis positivity candidate
+    positivity_score = score_percentage["positivity_score"]
+
+    # Required Service
+    requiered_service_score = calculate_viability_score(json_data["budget"], len(json_data["services"]), days_until_date(json_data["end_date"]))
+    requiered_service_score = requiered_service_score * score_percentage["requiered_service_score"]
+
+    # political party
+    political_parties = {
+            "Partido Acción Nacional" : 0.11,
+            "Morena" : 0.14,
+            "Movimiento Ciudadano" : 0.15,
+            "Partido Revolucional Institucional" : 0.08,
+            "Partido de la Revolución Democrática" : 0.11,
+            "Partido Verde Ecologista" : 0.05,
+            "Partido  del Trabajo" : 0.16,
+            "Otro":0.05,
+    }
+    political_party_score = political_parties[json_data["political_party"]]
+
+    # score = current_charge_score + desired_charge_score + time_in_politics_score + positive_reputation + not_negative_reputation + tweeter_followers_score + instagram_followers_score + tweeter_retweets_score + tweeter_views_score + positivity_score + requiered_service_score
+    score = current_charge_score + desired_charge_score + political_party_score + time_in_politics_score + positive_reputation + not_negative_reputation + tweeter_followers_score + tweeter_retweets_score + tweeter_views_score + positivity_score + requiered_service_score
+    calculated_scores = {
+            "final_score" : score,
+            "current_charge_score" : current_charge_score,
+            "desired_charge_score" : desired_charge_score,
+            "time_in_politics_score" : time_in_politics_score,
+            "positive_reputation" : positive_reputation,
+            "not_negative_reputation" : not_negative_reputation,
+            "tweeter_followers_score" : tweeter_followers_score,
+            "tweeter_retweets_score" : tweeter_retweets_score,
+            "tweeter_views_score" : tweeter_views_score,
+            "positivity_score" : positivity_score,
+            "requiered_service_score" : requiered_service_score,
+            "political_party_score" : political_party_score
     }
     result_scores = {
             "calculated_scores" : calculated_scores,
